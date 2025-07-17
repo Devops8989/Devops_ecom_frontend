@@ -1,0 +1,28 @@
+pipeline {
+  agent any
+
+  stages {
+    stage('Clone') {
+      steps {
+        git 'https://github.com/YOUR_USERNAME/frontend.git'
+      }
+    }
+    stage('Install') {
+      steps {
+        sh 'npm install'
+      }
+    }
+    stage('Build Docker Image') {
+      steps {
+        sh 'docker build -t yourdockerhub/frontend:latest .'
+      }
+    }
+    stage('Push to DockerHub') {
+      steps {
+        withDockerRegistry([credentialsId: 'dockerhub-creds', url: '']) {
+          sh 'docker push yourdockerhub/frontend:latest'
+        }
+      }
+    }
+  }
+}
