@@ -12,7 +12,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                  git credentialsId: 'githubtoken', branch: "${params.BRANCH}", url: 'https://github.com/singhsajal/ecommerce-frontend.git'
+                  git credentialsId: 'githubtoken', branch: "${params.BRANCH}", url: 'https://github.com/Devops8989/Devops_ecom_frontend.git'
             }
         }
 
