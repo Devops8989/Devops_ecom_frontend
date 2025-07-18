@@ -1,28 +1,48 @@
 pipeline {
-  agent any
+    agent any
 
-  stages {
-    stage('Clone') {
-      steps {
-        git 'https://github.com/YOUR_USERNAME/frontend.git'
-      }
+    environment {
+        IMAGE_NAME = "singhsajal/ecommerce-frontend"
     }
-    stage('Install') {
-      steps {
-        sh 'npm install'
-      }
+
+    parameters {
+        string(name: 'BRANCH', defaultValue: 'staging', description: 'Git branch to build')
     }
-    stage('Build Docker Image') {
-      steps {
-        sh 'docker build -t yourdockerhub/frontend:latest .'
-      }
-    }
-    stage('Push to DockerHub') {
-      steps {
-        withDockerRegistry([credentialsId: 'dockerhub-creds', url: '']) {
-          sh 'docker push yourdockerhub/frontend:latest'
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: "${params.BRANCH}", url: 'https://github.com/singhsajal/ecommerce-frontend.git'
+            }
         }
-      }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}")
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                withDockerRegistry([credentialsId: 'dockerhub-credentials-id', url: '']) {
+                    script {
+                        docker.image("${IMAGE_NAME}:${env.BUILD_NUMBER}").push()
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Minikube') {
+            steps {
+                script {
+                    sh """
+                    kubectl config use-context minikube
+                    kubectl set image deployment/frontend frontend=${IMAGE_NAME}:${env.BUILD_NUMBER} --namespace=frontend --record || kubectl apply -f k8s/deployment.yaml
+                    """
+                }
+            }
+        }
     }
-  }
 }
