@@ -14,7 +14,9 @@ spec:
   - name: kaniko
     image: gcr.io/kaniko-project/executor:latest
     command:
-    - cat
+    - ""
+    args:
+    - ""
     tty: true
     volumeMounts:
     - name: kaniko-secret
@@ -23,6 +25,7 @@ spec:
   - name: kaniko-secret
     secret:
       secretName: dockerhub-secret
+  restartPolicy: Never
 """
         }
     }
@@ -45,8 +48,8 @@ spec:
                     /kaniko/executor \
                       --context `pwd` \
                       --dockerfile `pwd`/Dockerfile \
-                      --destination=$IMAGE_NAME:$BUILD_NUMBER \
-                      --destination=$IMAGE_NAME:latest \
+                      --destination=docker.io/${IMAGE_NAME}:${BUILD_NUMBER} \
+                      --destination=docker.io/${IMAGE_NAME}:latest \
                       --verbosity=info
                     '''
                 }
