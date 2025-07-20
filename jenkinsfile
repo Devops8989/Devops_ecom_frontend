@@ -2,7 +2,7 @@ pipeline {
     agent {
         kubernetes {
             label 'kaniko-agent'
-            defaultContainer 'kaniko'
+            defaultContainer 'jnlp'  // Only jnlp is running; we use kaniko explicitly
             yaml """
 apiVersion: v1
 kind: Pod
@@ -13,9 +13,9 @@ spec:
   containers:
   - name: kaniko
     image: gcr.io/kaniko-project/executor:latest
-    args:
-    - sleep
-    - "3600"
+    command:
+    - /busybox/cat
+    tty: true
     volumeMounts:
     - name: docker-config
       mountPath: /kaniko/.docker
