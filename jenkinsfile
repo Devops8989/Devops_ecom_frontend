@@ -3,28 +3,32 @@ pipeline {
         kubernetes {
             label 'kaniko-agent'
             defaultContainer 'kaniko'
-            yaml """
+           yaml """
 apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    some-label: kaniko
+    some-label: kaniko-agent
 spec:
   containers:
-    - name: kaniko
-      image: gcr.io/kaniko-project/executor:debug
-      command:
-        - /busybox/cat
-      tty: true
-      volumeMounts:
-        - name: kaniko-secret
-          mountPath: /kaniko/.docker
-  volumes:
-    - name: kaniko-secret
-      secret:
-        secretName: dockerhub-secret
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:latest
+    command:
+    - cat
+    tty: true
+    volumeMounts:
+    - name: docker-config
+      mountPath: /kaniko/.docker
   restartPolicy: Never
+  volumes:
+  - name: docker-config
+    secret:
+      secretName: dockerhub-secret
+      items:
+        - key: .dockerconfigjson
+          path: config.json
 """
+
         }
     }
 
