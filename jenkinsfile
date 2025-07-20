@@ -109,14 +109,23 @@ spec:
         stage('Build & Push Docker Image using Kaniko') {
             steps {
                 container('kaniko') {
+                    // sh '''
+                    // /kaniko/executor \
+                    //   --context `pwd` \
+                    //   --dockerfile `pwd`/Dockerfile \
+                    //   --destination=docker.io/${IMAGE_NAME}:${BUILD_NUMBER} \
+                    //   --destination=docker.io/${IMAGE_NAME}:latest \
+                    //   --verbosity=info
+                    // '''
                     sh '''
-                    /kaniko/executor \
-                      --context `pwd` \
-                      --dockerfile `pwd`/Dockerfile \
-                      --destination=docker.io/${IMAGE_NAME}:${BUILD_NUMBER} \
-                      --destination=docker.io/${IMAGE_NAME}:latest \
-                      --verbosity=info
-                    '''
+                            /kaniko/executor \
+                                --dockerfile `pwd`/Dockerfile \
+                                --context `pwd` \
+                                --destination=docker.io/${IMAGE_NAME}:${BUILD_NUMBER} \
+                                --destination=docker.io/${IMAGE_NAME}:latest \
+                                --verbosity=debug \
+                                --docker-config=/kaniko/.docker
+                            '''
                 }
             }
         }
