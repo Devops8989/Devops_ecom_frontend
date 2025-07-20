@@ -3,7 +3,7 @@ pipeline {
         kubernetes {
             label 'kaniko-agent'
             defaultContainer 'kaniko'
-           yaml """
+            yaml """
 apiVersion: v1
 kind: Pod
 metadata:
@@ -13,9 +13,9 @@ spec:
   containers:
   - name: kaniko
     image: gcr.io/kaniko-project/executor:latest
-    command:
-    - cat
-    tty: true
+    args:
+    - sleep
+    - "3600"
     volumeMounts:
     - name: docker-config
       mountPath: /kaniko/.docker
@@ -28,7 +28,6 @@ spec:
         - key: .dockerconfigjson
           path: config.json
 """
-
         }
     }
 
