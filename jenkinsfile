@@ -2,7 +2,7 @@ pipeline {
   agent {
     kubernetes {
       label 'kaniko-agent'
-      defaultContainer 'jnlp'
+      defaultContainer 'kaniko'
       yaml """
 apiVersion: v1
 kind: Pod
@@ -11,57 +11,50 @@ metadata:
     some-label: kaniko-agent
 spec:
   containers:
-    - name: kaniko
-      image: gcr.io/kaniko-project/executor:latest
-      args:
-        - "--verbosity=info"
-      volumeMounts:
-        - name: docker-config
-          mountPath: /kaniko/.docker
-  volumes:
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:latest
+    command:
+    - cat
+    tty: true
+    volumeMounts:
     - name: docker-config
-      secret:
-        secretName: dockerhub-secret
-        items:
-          - key: .dockerconfigjson
-            path: config.json
+      mountPath: /kaniko/.docker
+  volumes:
+  - name: docker-config
+    secret:
+      secretName: dockerhub-secret
 """
     }
   }
-
   environment {
-    IMAGE_NAME = 'singhsajal/ecommerce-frontend'
+    IMAGE_TAG = "7"
+    IMAGE_NAME = "singhsajal/ecommerce-frontend"
   }
-
   stages {
-    stage('Clone Repo') {
-      steps {
-        git branch: 'staging', url: 'https://github.com/Devops8989/Devops_ecom_frontend.git', credentialsId: 'githubtoken'
-      }
-    }
-
-    stage('Build & Push Image using Kaniko') {
+    stage('📦 Build & Push Docker Image using Kaniko') {
       steps {
         container('kaniko') {
           sh '''
+            echo "🔍 Checking mounted Docker config:"
+            cat /kaniko/.docker/config.json || echo "❌ Docker config not found"
+
             /kaniko/executor \
               --context `pwd` \
               --dockerfile `pwd`/Dockerfile \
-              --destination=docker.io/${IMAGE_NAME}:${BUILD_NUMBER} \
-              --destination=docker.io/${IMAGE_NAME}:latest \
+              --destination=docker.io/$IMAGE_NAME:$IMAGE_TAG \
+              --destination=docker.io/$IMAGE_NAME:latest \
               --verbosity=info
           '''
         }
       }
     }
   }
-
   post {
-    success {
-      echo "✅ Docker image pushed to Docker Hub successfully!"
-    }
     failure {
-      echo "❌ Something went wrong. Please check logs."
+      echo "❌ Pipeline failed. Please check logs."
+    }
+    success {
+      echo "✅ Kaniko build and push successful!"
     }
   }
 }
