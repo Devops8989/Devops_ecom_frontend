@@ -70,7 +70,29 @@ pipeline {
         kubernetes {
             label 'kaniko-agent'
             defaultContainer 'kaniko'
-            yaml """
+//             yaml """
+// apiVersion: v1
+// kind: Pod
+// metadata:
+//   labels:
+//     some-label: kaniko
+// spec:
+//   containers:
+//     - name: kaniko
+//       image: gcr.io/kaniko-project/executor:debug
+//       command:
+//         - cat
+//       tty: true
+//       volumeMounts:
+//         - name: kaniko-secret
+//           mountPath: /kaniko/.docker
+//   volumes:
+//     - name: kaniko-secret
+//       secret:
+//         secretName: dockerhub-secret
+//   restartPolicy: Never
+// """
+yaml """
 apiVersion: v1
 kind: Pod
 metadata:
@@ -81,7 +103,7 @@ spec:
     - name: kaniko
       image: gcr.io/kaniko-project/executor:debug
       command:
-        - cat
+        - /busybox/cat
       tty: true
       volumeMounts:
         - name: kaniko-secret
@@ -90,8 +112,12 @@ spec:
     - name: kaniko-secret
       secret:
         secretName: dockerhub-secret
+        items:
+          - key: .dockerconfigjson
+            path: config.json
   restartPolicy: Never
 """
+
         }
     }
 
