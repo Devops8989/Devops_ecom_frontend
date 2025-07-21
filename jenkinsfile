@@ -117,15 +117,23 @@ spec:
                     //   --destination=docker.io/${IMAGE_NAME}:latest \
                     //   --verbosity=info
                     // '''
-                    sh '''
-                            /kaniko/executor \
-                                --dockerfile `pwd`/Dockerfile \
-                                --context `pwd` \
-                                --destination=docker.io/${IMAGE_NAME}:${BUILD_NUMBER} \
-                                --destination=docker.io/${IMAGE_NAME}:latest \
-                                --verbosity=debug \
-                                --docker-config=/kaniko/.docker
-                            '''
+                    // sh '''
+                    //         /kaniko/executor \
+                    //             --dockerfile `pwd`/Dockerfile \
+                    //             --context `pwd` \
+                    //             --destination=docker.io/${IMAGE_NAME}:${BUILD_NUMBER} \
+                    //             --destination=docker.io/${IMAGE_NAME}:latest \
+                    //             --verbosity=debug \
+                    //             --docker-config=/kaniko/.docker
+                    //         '''
+                                        sh """
+                                            /kaniko/executor \
+                                                --dockerfile ${workspace}/Dockerfile \
+                                                --context ${workspace} \
+                                                --destination=docker.io/singhsajal/ecommerce-frontend:20 \
+                                                --destination=docker.io/singhsajal/ecommerce-frontend:latest \
+                                                --verbosity=debug
+                                            """
                 }
             }
         }
