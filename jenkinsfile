@@ -1,240 +1,43 @@
-// pipeline {
-//     agent {
-//         kubernetes {
-//             label 'kaniko-agent'
-//             defaultContainer 'kaniko'
-
-// yaml """
-// apiVersion: v1
-// kind: Pod
-// metadata:
-//   labels:
-//     some-label: kaniko
-// spec:
-//   containers:
-//     - name: kaniko
-//       image: gcr.io/kaniko-project/executor:debug
-//       command:
-//         - /busybox/cat
-//       tty: true
-//       volumeMounts:
-//         - name: kaniko-secret
-//           mountPath: /kaniko/.docker
-//   volumes:
-//     - name: kaniko-secret
-//       secret:
-//         secretName: dockerhub-secret
-//         items:
-//           - key: .dockerconfigjson
-//             path: config.json
-//   restartPolicy: Never
-// """
-
-//         }
-//     }
-
-//     environment {
-//         IMAGE_NAME = 'singhsajal/ecommerce-frontend'
-//     }
-
-//     stages {
-//         stage('Checkout Code') {
-//             steps {
-//                 git branch: 'staging', url: 'https://github.com/Devops8989/Devops_ecom_frontend.git', credentialsId: 'githubtoken'
-//             }
-//         }
-
-//         stage('Build & Push Docker Image using Kaniko') {
-//             steps {
-//                 container('kaniko') {
-                  
-//                                         sh """
-//                                             /kaniko/executor \
-//                                                 --dockerfile ${workspace}/Dockerfile \
-//                                                 --context ${workspace} \
-//                                                 --destination=docker.io/singhsajal/ecommerce-frontend:20 \
-//                                                 --destination=docker.io/singhsajal/ecommerce-frontend:latest \
-//                                                 --verbosity=debug
-//                                             """
-//                 }
-//             }
-//         }
-//     }
-
-//     post {
-//         success {
-//             echo '✅ Image built and pushed to Docker Hub successfully!'
-//         }
-//         failure {
-//             echo '❌ Pipeline failed. Please check logs.'
-//         }
-//     }
-// }
-
-
-
-
-
-//------- agent from jenkin UI ---------------------------------
-
 pipeline {
-    agent {
-        label 'docker-agent'  // Uses the UI-defined pod template
+  agent {
+    kubernetes {
+      label 'docker-agent'
+      defaultContainer 'jnlp'
     }
-
-      environment {
-        IMAGE_NAME = 'singhsajal/ecommerce-frontend'
-        IMAGE_TAG = 'latest'
-        DOCKER_CREDENTIALS_ID = 'Dockerhub'
+  }
+  environment {
+    DOCKERHUB_CREDENTIALS = credentials('Dockerhub') // Your DockerHub Jenkins Secret
+    IMAGE_NAME = "singhsajal/ecommerce-frontend"
+  }
+  stages {
+    stage('Checkout') {
+      steps {
+        git branch: 'staging', url: 'https://github.com/Devops8989/Devops_ecom_frontend.git'
+      }
     }
-
-    stages {
-        stage('Checkout') {
-            steps {
-                git url: 'https://github.com/Devops8989/Devops_ecom_frontend.git', branch: 'staging'
-            }
+    stage('Build Docker Image') {
+      steps {
+        container('docker') {
+          sh 'docker build -t $IMAGE_NAME:latest .'
         }
-
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh """
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                    """
-                }
-            }
-        }
+      }
     }
-
-    post {
-        success {
-            echo "✅ Docker image pushed successfully!"
+    stage('Push Docker Image') {
+      steps {
+        container('docker') {
+          withDockerRegistry([credentialsId: "$DOCKERHUB_CREDENTIALS", url: ""]) {
+            sh 'docker push $IMAGE_NAME:latest'
+          }
         }
-        failure {
-            echo "❌ Build or push failed."
-        }
+      }
     }
+  }
+  post {
+    failure {
+      echo "❌ Build or push failed."
+    }
+    success {
+      echo "✅ Docker image built and pushed successfully."
+    }
+  }
 }
-
-
-
-  // sh '''
-                    // /kaniko/executor \
-                    //   --context `pwd` \
-                    //   --dockerfile `pwd`/Dockerfile \
-                    //   --destination=docker.io/${IMAGE_NAME}:${BUILD_NUMBER} \
-                    //   --destination=docker.io/${IMAGE_NAME}:latest \
-                    //   --verbosity=info
-                    // '''
-                    // sh '''
-                    //         /kaniko/executor \
-                    //             --dockerfile `pwd`/Dockerfile \
-                    //             --context `pwd` \
-                    //             --destination=docker.io/${IMAGE_NAME}:${BUILD_NUMBER} \
-                    //             --destination=docker.io/${IMAGE_NAME}:latest \
-                    //             --verbosity=debug \
-                    //             --docker-config=/kaniko/.docker
-                    //         '''
-
-
-
-                    //             yaml """
-// apiVersion: v1
-// kind: Pod
-// metadata:
-//   labels:
-//     some-label: kaniko
-// spec:
-//   containers:
-//     - name: kaniko
-//       image: gcr.io/kaniko-project/executor:debug
-//       command:
-//         - cat
-//       tty: true
-//       volumeMounts:
-//         - name: kaniko-secret
-//           mountPath: /kaniko/.docker
-//   volumes:
-//     - name: kaniko-secret
-//       secret:
-//         secretName: dockerhub-secret
-//   restartPolicy: Never
-// """
-
-
-
-// pipeline {
-//     agent {
-//         kubernetes {
-//             label 'kaniko-agent'
-//             defaultContainer 'kaniko'
-//             yaml """
-// apiVersion: v1
-// kind: Pod
-// metadata:
-//   labels:
-//     some-label: kaniko
-// spec:
-//   containers:
-//     - name: kaniko
-//       image: gcr.io/kaniko-project/executor:debug
-//       command:
-//         - /busybox/cat
-//       tty: true
-//       volumeMounts:
-//         - name: kaniko-secret
-//           mountPath: /kaniko/.docker
-//   volumes:
-//     - name: kaniko-secret
-//       secret:
-//         secretName: dockerhub-secret
-//   restartPolicy: Never
-// """
-//         }
-//     }
-
-//     environment {
-//         IMAGE_NAME = 'singhsajal/ecommerce-frontend'
-//     }
-
-//     stages {
-//         stage('Checkout Code') {
-//             steps {
-//                 git branch: 'staging', url: 'https://github.com/Devops8989/Devops_ecom_frontend.git', credentialsId: 'githubtoken'
-//             }
-//         }
-
-//         stage('Build & Push Docker Image using Kaniko') {
-//             steps {
-//                 container('kaniko') {
-//                     sh '''
-//                     /kaniko/executor \
-//                       --context `pwd` \
-//                       --dockerfile `pwd`/Dockerfile \
-//                       --destination=docker.io/${IMAGE_NAME}:${BUILD_NUMBER} \
-//                       --destination=docker.io/${IMAGE_NAME}:latest \
-//                       --verbosity=info
-//                     '''
-//                 }
-//             }
-//         }
-//     }
-
-//     post {
-//         success {
-//             echo '✅ Image built and pushed to Docker Hub successfully!'
-//         }
-//         failure {
-//             echo '❌ Pipeline failed. Please check logs.'
-//         }
-//     }
-// }
