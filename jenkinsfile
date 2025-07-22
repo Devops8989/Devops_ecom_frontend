@@ -5,16 +5,19 @@ pipeline {
       defaultContainer 'jnlp'
     }
   }
+
   environment {
-    DOCKERHUB_CREDENTIALS = credentials('Dockerhub') // Your DockerHub Jenkins Secret
     IMAGE_NAME = "singhsajal/ecommerce-frontend"
+    DOCKERHUB_CREDENTIALS_ID = 'Dockerhub' // <-- the ID of your Jenkins DockerHub secret
   }
+
   stages {
     stage('Checkout') {
       steps {
         git branch: 'staging', url: 'https://github.com/Devops8989/Devops_ecom_frontend.git'
       }
     }
+
     stage('Build Docker Image') {
       steps {
         container('docker') {
@@ -22,16 +25,18 @@ pipeline {
         }
       }
     }
+
     stage('Push Docker Image') {
       steps {
         container('docker') {
-          withDockerRegistry([credentialsId: "$DOCKERHUB_CREDENTIALS", url: ""]) {
+          withDockerRegistry([credentialsId: env.DOCKERHUB_CREDENTIALS_ID, url: '']) {
             sh 'docker push $IMAGE_NAME:latest'
           }
         }
       }
     }
   }
+
   post {
     failure {
       echo "❌ Build or push failed."
