@@ -79,26 +79,36 @@
 
 pipeline {
     agent {
-        label 'kaniko-agent'  // Uses the UI-defined pod template
+        label 'docker-agent'  // Uses the UI-defined pod template
+    }
+
+      environment {
+        IMAGE_NAME = 'singhsajal/ecommerce-frontend'
+        IMAGE_TAG = 'latest'
+        DOCKER_CREDENTIALS_ID = 'Dockerhub'
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                git branch: 'staging', url: 'https://github.com/Devops8989/Devops_ecom_frontend.git', credentialsId: 'githubtoken'
+                git url: 'https://github.com/Devops8989/Devops_ecom_frontend.git', branch: 'staging'
             }
         }
 
-        stage('Build & Push Docker Image using Kaniko') {
+        stage('Build Docker Image') {
             steps {
-                container('kaniko') {
+                script {
+                    sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh """
-                        /kaniko/executor \
-                            --dockerfile ${workspace}/Dockerfile \
-                            --context ${workspace} \
-                            --destination=docker.io/singhsajal/ecommerce-frontend:20 \
-                            --destination=docker.io/singhsajal/ecommerce-frontend:latest \
-                            --verbosity=debug
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
                     """
                 }
             }
@@ -107,10 +117,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ Image built and pushed to Docker Hub successfully!'
+            echo "✅ Docker image pushed successfully!"
         }
         failure {
-            echo '❌ Pipeline failed. Please check logs.'
+            echo "❌ Build or push failed."
         }
     }
 }
