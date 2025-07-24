@@ -8,7 +8,7 @@ pipeline {
 
   environment {
     IMAGE_NAME = "singhsajal/ecommerce-frontend"
-    DOCKERHUB_CREDENTIALS_ID = 'Dockerhub' // <-- the ID of your Jenkins DockerHub secret
+    DOCKERHUB_CREDENTIALS_ID = 'dockerhub' // <-- the ID of your Jenkins DockerHub secret
   }
 
   stages {
