@@ -1,26 +1,29 @@
-import React, { useState, useContext } from "react";
-import { AppProvider, AppContext } from "./context";
-import Login from "./components/Login";
-import ProductList from "./components/ProductList";
-import Cart from "./components/Cart";
-import Payment from "./components/Payment";
+// App.js
+import React, { useState } from "react";
+import { Outlet, Link } from "react-router-dom";
 
-const AppRoutes = () => {
-  const { user } = useContext(AppContext);
-  const [page, setPage] = useState(user ? "products" : "login");
+export default function App() {
+  const [cart, setCart] = useState([]);
 
-  const navigate = (pageName) => setPage(pageName);
+  return (
+    <div>
+      {/* Simple Navbar */}
+      <nav
+        style={{
+          display: "flex",
+          gap: "1rem",
+          padding: "1rem",
+          borderBottom: "1px solid #ddd",
+        }}
+      >
+        <Link to="/">Products</Link>
+        <Link to="/cart">Cart ({cart.length})</Link>
+        <Link to="/payment">Payment</Link>
+        <Link to="/login">Login</Link>
+      </nav>
 
-  if (!user) return <Login navigate={navigate} />;
-  if (page === "products") return <ProductList navigate={navigate} />;
-  if (page === "cart") return <Cart navigate={navigate} />;
-  if (page === "payment") return <Payment />;
-};
-
-const App = () => (
-  <AppProvider>
-    <AppRoutes />
-  </AppProvider>
-);
-
-export default App;
+      {/* Pass cart + setCart to child pages */}
+      <Outlet context={{ cart, setCart }} />
+    </div>
+  );
+}

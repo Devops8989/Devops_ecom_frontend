@@ -1,28 +1,32 @@
-import React, { useContext, useState } from "react";
-import { AppContext } from "../context";
+import React, { useState } from "react";
+import API from "../api";
+import { useNavigate } from "react-router-dom";
 
-const Login = ({ navigate }) => {
-  const { setUser } = useContext(AppContext);
-  const [email, setEmail] = useState("");
+export default function Login(){
+  const [email, setEmail] = useState("user@example.com");
+  const [password, setPassword] = useState("password");
+  const [msg, setMsg] = useState("");
+  const nav = useNavigate();
 
-  const handleLogin = () => {
-    if (email) {
-      setUser({ email });
-      navigate("products");
+  const submit = async e => {
+    e.preventDefault();
+    try {
+      const res = await API.post("/auth/login", { email, password });
+      localStorage.setItem("user", JSON.stringify(res.data));
+      setMsg("Login success");
+      nav("/");
+    } catch (err) {
+      setMsg(err.response?.data?.message || "Login failed");
     }
   };
 
   return (
-    <div>
+    <form onSubmit={submit}>
       <h2>Login</h2>
-      <input
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <button onClick={handleLogin}>Login</button>
-    </div>
+      <div><input value={email} onChange={e=>setEmail(e.target.value)} /></div>
+      <div><input type="password" value={password} onChange={e=>setPassword(e.target.value)} /></div>
+      <button>Login</button>
+      <div>{msg}</div>
+    </form>
   );
-};
-
-export default Login;
+}
