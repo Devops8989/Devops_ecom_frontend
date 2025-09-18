@@ -1,14 +1,57 @@
+// pipeline {
+//   agent {
+//     kubernetes {
+//       label 'docker'
+//       defaultContainer 'docker'
+//     }
+//   }
+
+//   environment {
+//     IMAGE_NAME = "singhsajal/ecommerce-frontend"
+//     DOCKERHUB_CREDENTIALS_ID = 'dockerhub' // <-- the ID of your Jenkins DockerHub secret
+//   }
+
+//   stages {
+//     stage('Checkout') {
+//       steps {
+//         git branch: 'staging', url: 'https://github.com/Devops8989/Devops_ecom_frontend.git'
+//       }
+//     }
+
+//     stage('Build Docker Image') {
+//       steps {
+//         container('docker') {
+//           sh 'docker build -t $IMAGE_NAME:latest .'
+//         }
+//       }
+//     }
+
+//     stage('Push Docker Image') {
+//       steps {
+//         container('docker') {
+//           withDockerRegistry([credentialsId: env.DOCKERHUB_CREDENTIALS_ID, url: '']) {
+//             sh 'docker push $IMAGE_NAME:latest'
+//           }
+//         }
+//       }
+//     }
+//   }
+
+//   post {
+//     failure {
+//       echo "❌ Build or push failed."
+//     }
+//     success {
+//       echo "✅ Docker image built and pushed successfully."
+//     }
+//   }
+// }
+
 pipeline {
-  agent {
-    kubernetes {
-      label 'docker'
-      defaultContainer 'docker'
-    }
-  }
+  agent { label 'k8s-agent' }
 
   environment {
     IMAGE_NAME = "singhsajal/ecommerce-frontend"
-    DOCKERHUB_CREDENTIALS_ID = 'dockerhub' // <-- the ID of your Jenkins DockerHub secret
   }
 
   stages {
@@ -20,29 +63,36 @@ pipeline {
 
     stage('Build Docker Image') {
       steps {
-        container('docker') {
-          sh 'docker build -t $IMAGE_NAME:latest .'
-        }
+        sh 'docker build -t $IMAGE_NAME:${BUILD_NUMBER} .'
       }
     }
 
     stage('Push Docker Image') {
       steps {
-        container('docker') {
-          withDockerRegistry([credentialsId: env.DOCKERHUB_CREDENTIALS_ID, url: '']) {
-            sh 'docker push $IMAGE_NAME:latest'
-          }
+        withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          sh '''
+            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+            docker push $IMAGE_NAME:${BUILD_NUMBER}
+          '''
+        }
+      }
+    }
+
+    stage('Deploy to Staging') {
+      steps {
+        withKubeConfig([credentialsId: 'kubeconfig-staging']) {
+          sh 'helm upgrade --install frontend ./helm/frontend -n staging -f ./helm/envs/staging/frontend-values.yaml --set image.tag=${BUILD_NUMBER}'
         }
       }
     }
   }
 
   post {
-    failure {
-      echo "❌ Build or push failed."
-    }
     success {
-      echo "✅ Docker image built and pushed successfully."
+      echo "✅ Deployed successfully!"
+    }
+    failure {
+      echo "❌ Build failed."
     }
   }
 }
