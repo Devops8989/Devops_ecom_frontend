@@ -1,51 +1,41 @@
 pipeline {
-  // agent {
-  //   kubernetes {
-  //     label 'docker'
-  //     defaultContainer 'docker'
-  //   }
-  // }
    agent any
 
-  environment {
-    IMAGE_NAME = "singhsajal/ecommerce-frontend"
-    DOCKERHUB_CREDENTIALS_ID = 'dockerhub' // <-- the ID of your Jenkins DockerHub secret
-  }
+   environment {
+      IMAGE_NAME = "singhsajal/ecommerce-frontend"
+      DOCKERHUB_CREDENTIALS_ID = 'dockerhub' // Jenkins secret ID
+   }
 
-  stages {
-    stage('Checkout') {
-      steps {
-        git branch: 'staging', url: 'https://github.com/Devops8989/Devops_ecom_frontend.git'
+   stages {
+      stage('Checkout') {
+         steps {
+            git branch: 'staging', url: 'https://github.com/Devops8989/Devops_ecom_frontend.git'
+         }
       }
-    }
 
-    stage('Build Docker Image') {
-      steps {
-        container('docker') {
-          sh 'docker build -t $IMAGE_NAME:latest .'
-        }
+      stage('Build Docker Image') {
+         steps {
+            sh 'docker build -t $IMAGE_NAME:latest .'
+         }
       }
-    }
 
-    stage('Push Docker Image') {
-      steps {
-        container('docker') {
-          withDockerRegistry([credentialsId: env.DOCKERHUB_CREDENTIALS_ID, url: '']) {
-            sh 'docker push $IMAGE_NAME:latest'
-          }
-        }
+      stage('Push Docker Image') {
+         steps {
+            withDockerRegistry([credentialsId: env.DOCKERHUB_CREDENTIALS_ID, url: '']) {
+               sh 'docker push $IMAGE_NAME:latest'
+            }
+         }
       }
-    }
-  }
+   }
 
-  post {
-    failure {
-      echo "❌ Build or push failed."
-    }
-    success {
-      echo "✅ Docker image built and pushed successfully."
-    }
-  }
+   post {
+      failure {
+         echo "❌ Build or push failed."
+      }
+      success {
+         echo "✅ Docker image built and pushed successfully."
+      }
+   }
 }
 
 // pipeline {
