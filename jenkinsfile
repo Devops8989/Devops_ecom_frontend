@@ -1,57 +1,15 @@
-// pipeline {
-//   agent {
-//     kubernetes {
-//       label 'docker'
-//       defaultContainer 'docker'
-//     }
-//   }
-
-//   environment {
-//     IMAGE_NAME = "singhsajal/ecommerce-frontend"
-//     DOCKERHUB_CREDENTIALS_ID = 'dockerhub' // <-- the ID of your Jenkins DockerHub secret
-//   }
-
-//   stages {
-//     stage('Checkout') {
-//       steps {
-//         git branch: 'staging', url: 'https://github.com/Devops8989/Devops_ecom_frontend.git'
-//       }
-//     }
-
-//     stage('Build Docker Image') {
-//       steps {
-//         container('docker') {
-//           sh 'docker build -t $IMAGE_NAME:latest .'
-//         }
-//       }
-//     }
-
-//     stage('Push Docker Image') {
-//       steps {
-//         container('docker') {
-//           withDockerRegistry([credentialsId: env.DOCKERHUB_CREDENTIALS_ID, url: '']) {
-//             sh 'docker push $IMAGE_NAME:latest'
-//           }
-//         }
-//       }
-//     }
-//   }
-
-//   post {
-//     failure {
-//       echo "❌ Build or push failed."
-//     }
-//     success {
-//       echo "✅ Docker image built and pushed successfully."
-//     }
-//   }
-// }
-
 pipeline {
-  agent { label 'k8s-agent' }
+  // agent {
+  //   kubernetes {
+  //     label 'docker'
+  //     defaultContainer 'docker'
+  //   }
+  // }
+   agent any
 
   environment {
     IMAGE_NAME = "singhsajal/ecommerce-frontend"
+    DOCKERHUB_CREDENTIALS_ID = 'dockerhub' // <-- the ID of your Jenkins DockerHub secret
   }
 
   stages {
@@ -63,36 +21,93 @@ pipeline {
 
     stage('Build Docker Image') {
       steps {
-        sh 'docker build -t $IMAGE_NAME:${BUILD_NUMBER} .'
+        container('docker') {
+          sh 'docker build -t $IMAGE_NAME:latest .'
+        }
       }
     }
 
     stage('Push Docker Image') {
       steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-          sh '''
-            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-            docker push $IMAGE_NAME:${BUILD_NUMBER}
-          '''
-        }
-      }
-    }
-
-    stage('Deploy to Staging') {
-      steps {
-        withKubeConfig([credentialsId: 'kubeconfig-staging']) {
-          sh 'helm upgrade --install frontend ./helm/frontend -n staging -f ./helm/envs/staging/frontend-values.yaml --set image.tag=${BUILD_NUMBER}'
+        container('docker') {
+          withDockerRegistry([credentialsId: env.DOCKERHUB_CREDENTIALS_ID, url: '']) {
+            sh 'docker push $IMAGE_NAME:latest'
+          }
         }
       }
     }
   }
 
   post {
-    success {
-      echo "✅ Deployed successfully!"
-    }
     failure {
-      echo "❌ Build failed."
+      echo "❌ Build or push failed."
+    }
+    success {
+      echo "✅ Docker image built and pushed successfully."
     }
   }
 }
+
+// pipeline {
+//   agent { label 'k8s-agent' }
+
+//   environment {
+//     IMAGE_NAME = "singhsajal/ecommerce-frontend"
+//   }
+
+//   stages {
+//     stage('Checkout App Repo') {
+//       steps {
+//         git branch: 'staging', url: 'https://github.com/Devops8989/Devops_ecom_frontend.git'
+//       }
+//     }
+
+//     stage('Checkout Helm Repo') {
+//       steps {
+//         dir('k8s-charts') {
+//           git branch: 'staging', url: 'https://github.com/yourorg/k8s-charts.git'
+//         }
+//       }
+//     }
+
+//     stage('Build Docker Image') {
+//       steps {
+//         container('docker') {
+//           sh 'docker build -t $IMAGE_NAME:${BUILD_NUMBER} .'
+//         }
+//       }
+//     }
+
+//     stage('Push Docker Image') {
+//       steps {
+//         container('docker') {
+//           withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+//             sh '''
+//               echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+//               docker push $IMAGE_NAME:${BUILD_NUMBER}
+//             '''
+//           }
+//         }
+//       }
+//     }
+
+//     stage('Deploy with Helm') {
+//       steps {
+//         container('kubectl') {
+//           dir('k8s-charts') {
+//             sh 'helm upgrade --install frontend ./charts/frontend -n staging -f ./envs/staging/frontend-values.yaml --set image.repository=$IMAGE_NAME --set image.tag=${BUILD_NUMBER}'
+//           }
+//         }
+//       }
+//     }
+//   }
+
+//   post {
+//     success {
+//       echo "✅ Frontend deployed successfully!"
+//     }
+//     failure {
+//       echo "❌ Pipeline failed."
+//     }
+//   }
+// }
