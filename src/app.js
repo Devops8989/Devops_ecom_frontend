@@ -1,29 +1,25 @@
-// App.js
-import React, { useState } from "react";
-import { Outlet, Link } from "react-router-dom";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navbar from './components/NavBar';
+import Home from './pages/Home';
+import Cart from './pages/Cart';
+import Login from './pages/Login';
+import Profile from './pages/Profile';
+import Checkout from './pages/Checkout';
 
-export default function App() {
-  const [cart, setCart] = useState([]);
-
+function App() {
   return (
-    <div>
-      {/* Simple Navbar */}
-      <nav
-        style={{
-          display: "flex",
-          gap: "1rem",
-          padding: "1rem",
-          borderBottom: "1px solid #ddd",
-        }}
-      >
-        <Link to="/">Products</Link>
-        <Link to="/cart">Cart ({cart.length})</Link>
-        <Link to="/payment">Payment</Link>
-        <Link to="/login">Login</Link>
-      </nav>
-
-      {/* Pass cart + setCart to child pages */}
-      <Outlet context={{ cart, setCart }} />
-    </div>
+    <Router>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/checkout" element={<Checkout />} />
+      </Routes>
+    </Router>
   );
 }
+
+export default App;
